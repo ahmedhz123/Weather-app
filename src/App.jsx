@@ -4,49 +4,26 @@ import CloudIcon from "@mui/icons-material/Cloud";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import axios from "axios";
 import moment from "moment";
-
+import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
+import { fetchWeatherData } from "./WeatherApiSlice";
+import CircularProgress from "@mui/material/CircularProgress";
 moment.locale("ar"); // set moment to use Arabic locale
-let axiosCancel = null;
 const App = () => {
+  const dispatch = useDispatch();
+  let loading = useSelector((state) => state.weatherApiReducer.loading);
+  let info = useSelector((state) => state.weatherApiReducer.weather);
   const { t, i18n } = useTranslation();
   // States
-  let [info, setInfo] = useState({
-    temp: null,
-    desc: "",
-    min: null,
-    max: null,
-    icon: "",
-  });
   const [dateAndtime, setDateAndTime] = useState("");
   const [lang, setLang] = useState("ar");
   useEffect(() => {
     i18n.changeLanguage("ar");
     setDateAndTime(moment().format("MMMM Do YYYY, h:mm:ss a"));
-    const fetchData = async () => {
-      let res = await axios.get(
-        "https://api.openweathermap.org/data/2.5/weather?lat=30.0444&lon=31.2357&appid=44fee56d3f4b91b7015ac14f4e960d49",
-        {
-          cancelToken: new axios.CancelToken((c) => (axiosCancel = c)),
-        }
-      );
-      let data = res.data;
-      setInfo({
-        temp: Math.round(data.main.temp - 272.15),
-        desc: data.weather[0].description,
-        min: Math.round(data.main.temp_min - 272.15),
-        max: Math.round(data.main.temp_max - 272.15),
-        icon: data.weather[0].icon,
-      });
-    };
-    fetchData();
+    dispatch(fetchWeatherData());
     // cleanup function
-    return () => {
-      axiosCancel();
-    };
   }, []);
   return (
     <>
@@ -70,7 +47,10 @@ const App = () => {
             <Typography variant="h1" className={"heading-1"}>
               {t("Cairo")}
             </Typography>
-            <Typography className={"heading-2 self-end mr-2 text-center"} variant="h5">
+            <Typography
+              className={"heading-2 self-end mr-2 text-center"}
+              variant="h5"
+            >
               {dateAndtime}
             </Typography>
           </CardContent>
@@ -80,13 +60,14 @@ const App = () => {
               className={"flex flex-col items-center justify-center"}
             >
               <div className="flex items-center gap-[15px]">
+                {loading && <CircularProgress />}
                 <Typography variant="h1" className="ibm">
                   {info.temp}&deg;C
                 </Typography>
                 <div className="img">
                   <img
                     className="w-full h-full"
-                    src={`https://openweathermap.org/img/wn/${info.icon}@2x.png`}
+                    src={info.icon}
                   />
                 </div>
               </div>
